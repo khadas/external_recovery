@@ -8,19 +8,23 @@
  * You can modify this (for example with "#define LOG_NDEBUG 0"
  * at the top of your source file) to change that behavior.
  */
-#define LOG_LEVEL LOG_DEBUG
-#define LOG_BUF_SIZE 1024
-
 #include "log.h"
 #include <stdio.h>
 #include <stdarg.h>
 
+#define LOG_BUF_SIZE 1024
+static int LOG_LEVEL = LOG_DEBUG;
 
-void InitLogging(int argc, const char* const* argv) {}
+
+void InitLogging(LogPriority level)
+{
+    if (level > 0)
+        LOG_LEVEL = level;
+}
 
 void Log(const char* file, int line, LogPriority level, const char* fmt, ...)
 {
-    if (level < LOG_LEVEL) {
+    if (level > LOG_LEVEL) {
         return;
     }
 

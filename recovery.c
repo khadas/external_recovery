@@ -29,6 +29,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/time.h>
 
 #include "bootloader.h"
 #include "common.h"
@@ -55,6 +56,8 @@ static const struct option OPTIONS[] = {
     { "set_encrypted_filesystems", required_argument, NULL, 'e' },
     { "show_text", no_argument, NULL, 't' },
     { "factory_pcba_test", no_argument, NULL, 'f' },
+    { "rkdebug", no_argument, NULL, 'r'},
+    { "ui_rotation", required_argument, NULL, 'i'},
     { NULL, 0, NULL, 0 },
 };
 
@@ -842,14 +845,66 @@ main(int argc, char **argv)
     bool bUDiskBoot = false;
     const char *sdupdate_package = NULL;
     const char *usbupdate_package = NULL;
+    int previous_runs = 0;
+    const char *send_intent = NULL;
+    const char *update_package = NULL;
+    const char *encrypted_fs_mode = NULL;
+    int wipe_data = 0;
+    int wipe_all = 0;
+    int pcba_test = 0;  // add for pcba test
+    int toggle_secure_fs = 0;
+    int arg;
+    bool isrkdebug = false;
+    int log_level = LOG_DEBUG;
+    encrypted_fs_info encrypted_fs_data;
+    struct timeval start_time, end_time;
+    long long elapsed_time;
 
-    while (access(coldboot_done, F_OK) != 0) {
-        LOGI("coldboot not done, wait...\n");
-        sleep(1);
+    gettimeofday(&start_time, NULL);
+
+    get_args(&argc, &argv);
+    strcpy(systemFlag, "false");
+    while ((arg = getopt_long(argc, argv, "", OPTIONS, NULL)) != -1) {
+        switch (arg) {
+        case 'p':
+            previous_runs = atoi(optarg);
+            break;
+        case 's':
+            send_intent = optarg;
+            break;
+        case 'u':
+            update_package = optarg;
+            break;
+        case 'w':
+            wipe_data = 1;
+            break;
+        case 'a':
+            wipe_all = 1;
+            break;
+        case 'e':
+            encrypted_fs_mode = optarg;
+            toggle_secure_fs = 1;
+            break;
+        case 't':
+            ui_show_text(1);
+            break;
+        case 'f':
+            pcba_test = 1;
+            break;  // add for pcba test
+        case 'r':
+            isrkdebug = true;
+            break;
+        case 'i':
+            gr_set_rotate(atoi(optarg));
+            break;
+        case '?':
+            LOGE("Invalid command argument\n");
+            continue;
+        }
     }
 
     time_t start = time(NULL);
-    if (access("/.rkdebug", F_OK) != 0) {
+    if ((access("/.rkdebug", F_OK) != 0) && (isrkdebug != true)) {
         // If these fail, there's not really anywhere to complain...
         if (freopen(TEMPORARY_LOG_FILE, "a", stdout) == NULL) {
             LOGW("freopen stdout error");
@@ -860,12 +915,18 @@ main(int argc, char **argv)
         }
         setbuf(stderr, NULL);
     }
+
     printf("\n");
     printf("*********************************************************\n");
     printf("            ROCKCHIP recovery system                     \n");
     printf("*********************************************************\n");
     printf("**** version : %s ****\n", recovery_version);
+
     LOGI("Starting recovery on %s\n", ctime(&start));
+    while (access(coldboot_done, F_OK) != 0) {
+        LOGI("coldboot not done, wait...\n");
+        sleep(1);
+    }
 
 #ifndef RecoveryNoUi
     LOGI("Recovery System have UI defined.\n");
@@ -879,9 +940,7 @@ main(int argc, char **argv)
     bSDBoot = is_boot_from_SD();
     bUDiskBoot = is_boot_from_udisk();
 
-    if (!bSDBoot && !bUDiskBoot) {
-        get_args(&argc, &argv);
-    } else {
+    if (bSDBoot || bUDiskBoot) {
         char imageFile[64] = {0};
         if (bSDBoot) {
             if (is_sdcard_update()) {
@@ -893,8 +952,6 @@ main(int argc, char **argv)
                     ui_show_text(1);
                     LOGI("sdupdate_package = %s\n", sdupdate_package);
                 }
-            } else {
-                get_args(&argc, &argv);
             }
         }
 
@@ -908,37 +965,7 @@ main(int argc, char **argv)
                     ui_show_text(1);
                     LOGI("usbupdate_package = %s\n", usbupdate_package);
                 }
-            } else {
-                get_args(&argc, &argv);
             }
-        }
-    }
-
-    int previous_runs = 0;
-    const char *send_intent = NULL;
-    const char *update_package = NULL;
-    const char *encrypted_fs_mode = NULL;
-    int wipe_data = 0;
-    int wipe_all = 0;
-    int pcba_test = 0;  // add for pcba test
-    int toggle_secure_fs = 0;
-    encrypted_fs_info encrypted_fs_data;
-
-    strcpy(systemFlag, "false");
-    int arg;
-    while ((arg = getopt_long(argc, argv, "", OPTIONS, NULL)) != -1) {
-        switch (arg) {
-        case 'p': previous_runs = atoi(optarg); break;
-        case 's': send_intent = optarg; break;
-        case 'u': update_package = optarg; break;
-        case 'w': wipe_data = 1; break;
-        case 'a': wipe_all = 1; break;
-        case 'e': encrypted_fs_mode = optarg; toggle_secure_fs = 1; break;
-        case 't': ui_show_text(1); break;
-        case 'f': pcba_test = 1; break;  // add for pcba test
-        case '?':
-            LOGE("Invalid command argument\n");
-            continue;
         }
     }
 
@@ -1250,6 +1277,11 @@ main(int argc, char **argv)
 
     // Otherwise, get ready to boot the main system...
     finish_recovery(send_intent);
+    gettimeofday(&end_time, NULL);
+
+    elapsed_time = (end_time.tv_sec - start_time.tv_sec) * 1000LL +
+                   (end_time.tv_usec - start_time.tv_usec) / 1000LL;
+    LOGI("recovery usage time:%lld ms\n", elapsed_time);
     ui_print("Rebooting...\n");
     LOGI("Reboot...\n");
     ui_show_text(0);

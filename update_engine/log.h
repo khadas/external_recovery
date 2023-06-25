@@ -12,14 +12,15 @@ typedef enum {
     LOG_WARN,
     LOG_INFO,
     LOG_DEBUG,
-    LOG_VERBOSE
+    LOG_VERBOSE,
+    LOG_MAX
 } LogPriority;
 
 // Enable/disable verbose logging (LOGV).
 // This function is supplied for cases where the system layer does not
 // initialize logging.  This is also needed to initialize logging in
 // unit tests.
-void InitLogging(int argc, const char* const* argv);
+void InitLogging(LogPriority level);
 
 void Log(const char* file, int line, LogPriority level, const char* fmt, ...);
 

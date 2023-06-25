@@ -434,6 +434,15 @@ void gr_flip()
     gr_draw = gr_backend->flip(gr_backend);
 }
 
+static int set_user_rotate = ROTATION_NONE;
+void gr_set_rotate(int val)
+{
+    if ((val <= ROTATION_LEFT) && (val >= ROTATION_NONE))
+        set_user_rotate = val;
+    else
+        set_user_rotate = ROTATION_NONE;
+}
+
 int gr_init(void)
 {
     gr_init_font();
@@ -478,7 +487,7 @@ int gr_init(void)
 
     gr_flip();
 
-    gr_rotate(ROTATION_NONE);
+    gr_rotate(set_user_rotate);
     return 0;
 }
 

@@ -429,6 +429,18 @@ int setSlotActivity()
 */
 int wipe_userdata(int auto_reboot)
 {
+    int slot = -1;
+    slot = getCurrentSlot();
+    if (-1 == slot) {
+        //写MISC
+        struct bootloader_message msg;
+        memset(&msg, 0, sizeof(msg));
+        char recovery_str[] = "recovery\n--wipe_all";
+        strcpy(msg.command, "boot-recovery");
+        sprintf(msg.recovery, "%s\n", recovery_str);
+        set_bootloader_message(&msg);
+        return 0;
+    }
     if (writeCmdMisc((char *)CMD_WIPE_USERDATA, sizeof(CMD_WIPE_USERDATA)) != 0) {
         return -1;
     }

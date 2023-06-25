@@ -153,7 +153,7 @@ bool comparefile(const char *dest_path, const char *source_path, long long dest_
     checkdata(source_path, md5sum_source, source_offset, checkSize);
     for (int i = 0; i < 16; i++) {
         if (md5sum_dest[i] != md5sum_source[i]) {
-            LOGE("MD5Check is error of %s", dest_path);
+            LOGE("MD5Check is error of %s\n", dest_path);
             return false;
         }
     }
@@ -188,13 +188,13 @@ bool compareMd5sum(const char *dest_path, unsigned char *source_md5sum, long lon
         for (int j = 0; j < 16; j++) {
             if (tmp[j][1] == (md5sum[i / 2] >> 4)) {
                 if (source_md5sum[i] != tmp[j][0]) {
-                    LOGE("MD5Check is error of %s", dest_path);
+                    LOGE("MD5Check is error of %s\n", dest_path);
                     return false;
                 }
             }
             if (tmp[j][1] == (md5sum[i / 2] & 0x0f)) {
                 if (source_md5sum[i + 1] != tmp[j][0]) {
-                    LOGE("MD5Check is error of %s", dest_path);
+                    LOGE("MD5Check is error of %s\n", dest_path);
                     return false;
                 }
             }

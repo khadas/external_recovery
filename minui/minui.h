@@ -127,6 +127,7 @@ int res_create_localized_alpha_surface(const char* name, const char* locale,
 // functions.
 void res_free_surface(gr_surface surface);
 
+void gr_set_rotate(int val);
 #ifdef __cplusplus
 }
 #endif

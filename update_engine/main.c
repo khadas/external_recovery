@@ -23,11 +23,15 @@
 #include "log.h"
 #include "update.h"
 #include "../bootloader.h"
+#include "../recovery_version.h"
 #include "defineHeader.h"
 #include "rktools.h"
 
 extern bool is_sdboot;
 extern bool is_usbboot;
+static bool rkdebug = false;
+static char *ui_rotation = NULL;
+static const char *update_engine_version = RECOVERY_VERSION_STRING;
 
 RK_Upgrade_Status_t m_status = RK_UPGRADE_ERR;
 FILE* cmd_pipe = NULL;
@@ -105,9 +109,16 @@ static int MiscUpdate(char *url,  char *update_partition, char *save_path)
             memset(&msg, 0, sizeof(msg));
             char recovery_str[] = "recovery\n--update_package=";
             strcpy(msg.command, "boot-recovery");
-            sprintf(msg.recovery, "%s%s", recovery_str, savepath);
-            msg.recovery[strlen(msg.recovery) + 1] = '\n';
+            sprintf(msg.recovery, "%s%s\n", recovery_str, savepath);
             memcpy(msg.needupdate, &partition, 4);
+            if (true == rkdebug) {
+                strcat(msg.recovery, "--rkdebug\n");
+            }
+            if (NULL != ui_rotation) {
+                strcat(msg.recovery, "--ui_rotation=");
+                strcat(msg.recovery, ui_rotation);
+                msg.recovery[strlen(msg.recovery)] = '\n';
+            }
             set_bootloader_message(&msg);
             return 0;
         }
@@ -167,6 +178,9 @@ void display(void)
     LOGI("--version_url=url      The path to the file of version.\n");
     LOGI("--image_url=url        Path to upgrade firmware.\n");
     LOGI("--savepath=url         save the update.img to url.\n");
+    LOGI("--version              the version of updateEngine\n");
+    LOGI("--rkdebug              Log output to serial port\n");
+    LOGI("--ui_rotation          UI rotation,has 4 angles(0-3).\n");
 
 }
 
@@ -182,12 +196,15 @@ static const struct option engine_options[] = {
     { "help", no_argument, NULL, 'h' },
     { "pipefd", required_argument, NULL, 'p' + 'f' },
     { "savepath", required_argument, NULL, 's'},
+    { "version", no_argument, NULL, 'v'},
+    { "rkdebug", no_argument, NULL, 'k'},
+    { "ui_rotation", required_argument, NULL, 'o'},
     { NULL, 0, NULL, 0 },
 };
 
 int main(int argc, char *argv[])
 {
-    LOGI("*** update_engine: Version V1.1.5 ***.\n");
+    LOGI("*** update_engine: %s ***.\n", update_engine_version);
     int arg;
     char *image_url = NULL;
     char *version_url = NULL;
@@ -212,6 +229,9 @@ int main(int argc, char *argv[])
         case 'p' + 'f': pipefd = atoi(optarg); continue;
         case 'h': display(); break;
         case 'd': custom_define = optarg; continue;
+        case 'v': LOGI("*** update_engine: %s ***.\n", update_engine_version); break;
+        case 'k': rkdebug = true; break;
+        case 'o': ui_rotation = optarg; break;
         case '?':
             LOGE("Invalid command argument\n");
             continue;
