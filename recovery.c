@@ -726,15 +726,9 @@ static int ui_update(const char * fw_package)
 #endif
         if (status == INSTALL_SUCCESS) {
             strcpy(systemFlag, fw_package);
-
-            if (strncmp(fw_package, "/userdata", 9) != 0) {
-                if (resize_volume("/userdata"))
-                    LOGE("\n ---resize_volume userdata error ---\n");
-            } else {
-                //update success, delete userdata/update.img and write result to file.
-                if (access(fw_package, F_OK) == 0)
-                    remove(fw_package);
-            }
+            /* update success, delete update.img */
+            if (access(fw_package, F_OK) == 0)
+                remove(fw_package);
         }
     } else {
         status = INSTALL_ERROR;
@@ -1031,15 +1025,9 @@ main(int argc, char **argv)
 #endif
             if (status == INSTALL_SUCCESS) {
                 strcpy(systemFlag, update_package);
-
-                if (strncmp(update_package, "/userdata", 9) != 0) {
-                    if (resize_volume("/userdata"))
-                        LOGE("\n ---resize_volume userdata error ---\n");
-                } else {
-                    //update success, delete userdata/update.img and write result to file.
-                    if (access(update_package, F_OK) == 0)
-                        remove(update_package);
-                }
+                /* update success, delete update.img. */
+                if (access(update_package, F_OK) == 0)
+                    remove(update_package);
                 ui_print("update.img images success!\n");
             } else {
                 ui_print("update.img images failed!\n");
@@ -1184,12 +1172,6 @@ main(int argc, char **argv)
             LOGI("userdata wipe done.\n");
         }
 
-        if (access("/dev/block/by-name/oem", F_OK) == 0) {
-            if (resize_volume("/oem")) status = INSTALL_ERROR;
-            if (status != INSTALL_SUCCESS) ui_print("resize failed.\n");
-        }
-
-        ui_print("resize oem done.\n");
         //ui_show_text(0);
     } else if (pcba_test) {
         //pcba test todo...
