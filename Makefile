@@ -41,7 +41,7 @@ CFLAGS += -I$(PROJECT_DIR) -I/usr/include -I/usr/include/libdrm/ -lc -DUSE_UPDAT
 ifdef RecoveryNoUi
 CFLAGS += -lpthread -lbz2
 else
-CFLAGS += -lz -lpng -ldrm -lpthread -lcurl -lcrypto -lbz2
+CFLAGS += -lz -lpng -ldrm -lpthread -lcurl -lbz2
 endif
 
 UPDATE_ENGINE_OBJ = mtdutils/mounts.o \
@@ -52,6 +52,7 @@ UPDATE_ENGINE_OBJ = mtdutils/mounts.o \
 	update_engine/flash_image.o \
 	update_engine/log.o \
 	update_engine/main.o \
+	update_engine/md5.o \
 	update_engine/md5sum.o \
 	update_engine/rkimage.o \
 	update_engine/rktools.o \
